@@ -118,6 +118,8 @@ const createItem = async (req, res) => {
       type,
       category,
       description,
+      color,
+      model,
       location,
       currentLocation,
       date,
@@ -136,6 +138,8 @@ const createItem = async (req, res) => {
         type,
         category,
         description,
+        color: color || '',
+        model: model || '',
         location,
         currentLocation: currentLocation || '',
         date: date || Date.now(),
@@ -160,6 +164,8 @@ const createItem = async (req, res) => {
         type,
         category,
         description,
+        color: color || '',
+        model: model || '',
         location,
         currentLocation: currentLocation || '',
         date: date || new Date(),
@@ -206,6 +212,8 @@ const updateItem = async (req, res) => {
         title,
         category,
         description,
+        color,
+        model,
         location,
         currentLocation,
         date,
@@ -217,7 +225,14 @@ const updateItem = async (req, res) => {
       if (title) item.title = title;
       if (category) item.category = category;
       if (description) item.description = description;
+      if (color !== undefined) item.color = color;
+      if (model !== undefined) item.model = model;
       if (location) item.location = location;
+      if (currentLocation !== undefined) item.currentLocation = currentLocation;
+      if (date) item.date = date;
+      if (time !== undefined) item.time = time;
+      if (contactPreference) item.contactPreference = contactPreference;
+      if (status) item.status = status;
       if (currentLocation !== undefined) item.currentLocation = currentLocation;
       if (date) item.date = date;
       if (time !== undefined) item.time = time;

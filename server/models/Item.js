@@ -31,6 +31,16 @@ const itemSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Description is required'],
     },
+    color: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    model: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     location: {
       type: String,
       required: [true, 'Location is required'],

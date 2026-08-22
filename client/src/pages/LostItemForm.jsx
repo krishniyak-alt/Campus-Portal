@@ -23,6 +23,8 @@ const LostItemForm = () => {
     title: '',
     category: 'Electronics',
     description: '',
+    color: '',
+    model: '',
     location: '',
     date: new Date().toISOString().split('T')[0],
     time: '',
@@ -60,6 +62,8 @@ const LostItemForm = () => {
       data.append('type', 'lost');
       data.append('category', formData.category);
       data.append('description', formData.description);
+      data.append('color', formData.color);
+      data.append('model', formData.model);
       data.append('location', formData.location);
       data.append('date', formData.date);
       data.append('time', formData.time);
@@ -116,6 +120,38 @@ const LostItemForm = () => {
               placeholder="e.g. Blue Hydro Flask 32oz, AirPods Pro in White Case..."
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-600 mb-1.5">
+                Primary Color (Used for Security Verification) *
+              </label>
+              <input
+                type="text"
+                name="color"
+                required
+                value={formData.color}
+                onChange={handleChange}
+                placeholder="e.g. Blue, Black, Silver, Red..."
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-600 mb-1.5">
+                Brand / Model / Unique Tag *
+              </label>
+              <input
+                type="text"
+                name="model"
+                required
+                value={formData.model}
+                onChange={handleChange}
+                placeholder="e.g. Hydro Flask, Apple AirPods Pro, Green tag..."
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

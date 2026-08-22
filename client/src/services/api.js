@@ -24,10 +24,12 @@ API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Token expired or invalid
+      // Token expired or missing/invalid
+      localStorage.removeItem('userInfo');
+      window.dispatchEvent(new Event('auth:unauthorized'));
       const currentPath = window.location.pathname;
       if (currentPath !== '/login' && currentPath !== '/register') {
-        localStorage.removeItem('userInfo');
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
