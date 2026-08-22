@@ -17,6 +17,9 @@ import BrowseItems from './pages/BrowseItems';
 import ItemDetails from './pages/ItemDetails';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AIMatchResultPage from './pages/AIMatchResultPage';
+import Chat from './pages/Chat';
+import NotificationsPage from './pages/NotificationsPage';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -48,6 +51,8 @@ function App() {
               <Route path="/items/:id" element={<ItemDetails />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/matches" element={<AIMatchResultPage />} />
+              <Route path="/matches/:id" element={<AIMatchResultPage />} />
 
               {/* Student Protected Routes */}
               <Route
@@ -63,6 +68,30 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FoundItemForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat"
+                element={
+                  <ProtectedRoute>
+                    <Chat />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat/:conversationId"
+                element={
+                  <ProtectedRoute>
+                    <Chat />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
                   </ProtectedRoute>
                 }
               />

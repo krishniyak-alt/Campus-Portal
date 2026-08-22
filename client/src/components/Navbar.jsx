@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 import {
   Search,
   PlusCircle,
@@ -13,6 +14,8 @@ import {
   Menu,
   X,
   Compass,
+  Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -94,6 +97,30 @@ const Navbar = () => {
                 </Link>
 
                 <Link
+                  to="/matches"
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+                    isActive('/matches')
+                      ? 'bg-purple-50 text-purple-600 font-semibold'
+                      : 'text-slate-600 hover:text-purple-600 hover:bg-purple-50/50'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <span>AI Matches</span>
+                </Link>
+
+                <Link
+                  to="/chat"
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+                    location.pathname.startsWith('/chat')
+                      ? 'bg-blue-50 text-blue-600 font-semibold'
+                      : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/50'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4 text-blue-500" />
+                  <span>Chat</span>
+                </Link>
+
+                <Link
                   to="/dashboard"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
                     isActive('/dashboard')
@@ -126,6 +153,9 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-3">
             {user ? (
               <div className="flex items-center space-x-3">
+                {/* In-App Notification Dropdown */}
+                <NotificationDropdown />
+
                 <div className="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
                   <div className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xs flex items-center justify-center uppercase">
                     {user.name.charAt(0)}
@@ -204,6 +234,30 @@ const Navbar = () => {
               >
                 <CheckCircle className="w-5 h-5" />
                 <span>Report Found Item</span>
+              </Link>
+              <Link
+                to="/matches"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-purple-600 hover:bg-purple-50 font-medium text-sm"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>AI Item Matches</span>
+              </Link>
+              <Link
+                to="/chat"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-blue-600 hover:bg-blue-50 font-medium text-sm"
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span>Messages / Chat</span>
+              </Link>
+              <Link
+                to="/notifications"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-amber-600 hover:bg-amber-50 font-medium text-sm"
+              >
+                <Bell className="w-5 h-5" />
+                <span>Notifications</span>
               </Link>
               <Link
                 to="/dashboard"

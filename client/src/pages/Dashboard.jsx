@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import API from '../services/api';
 import Loading from '../components/Loading';
@@ -19,26 +19,32 @@ import {
   MapPin,
   ArrowRight,
   PackageCheck,
+  Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('reports'); // 'reports' | 'claims'
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('reports'); // 'reports' | 'claims' | 'matches'
   const [reports, setReports] = useState([]);
   const [claims, setClaims] = useState([]);
+  const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [reportsRes, claimsRes] = await Promise.all([
+      const [reportsRes, claimsRes, matchesRes] = await Promise.all([
         API.get('/items/my-reports'),
         API.get('/claims/my-claims'),
+        API.get('/matches/my-matches').catch(() => ({ data: [] })),
       ]);
 
       setReports(reportsRes.data || []);
       setClaims(claimsRes.data || []);
+      setMatches(matchesRes.data || []);
     } catch (error) {
       console.error('Dashboard fetch error:', error);
       toast.error('Failed to load dashboard data');
@@ -189,6 +195,18 @@ const Dashboard = () => {
           >
             <ShieldAlert className="w-4 h-4" />
             <span>My Claim Statuses ({claims.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('matches')}
+            className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center space-x-2 ${
+              activeTab === 'matches'
+                ? 'bg-white text-purple-600 shadow-md'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-purple-500" />
+            <span>AI Matches ({matches.length})</span>
           </button>
         </div>
 
@@ -391,6 +409,118 @@ const Dashboard = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB CONTENT: AI MATCHES */}
+        {activeTab === 'matches' && (
+          <div className="p-6">
+            {matches.length === 0 ? (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h4 className="font-bold text-slate-800 text-sm">No AI Matches Detected Yet</h4>
+                <p className="text-slate-500 text-xs max-w-sm mx-auto">
+                  When our AI finds high-confidence overlaps between your lost/found items and other campus reports, they will be listed here.
+                </p>
+                <Link
+                  to="/matches"
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-md"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Explore AI Matches Hub</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {matches.map((m) => {
+                  const isHigh = m.overallScore >= 80;
+                  return (
+                    <div
+                      key={m._id}
+                      className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4 hover:border-purple-200 transition-all flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                              isHigh
+                                ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                                : 'bg-amber-100 text-amber-800 border border-amber-300'
+                            }`}
+                          >
+                            {m.overallScore}% {m.matchGrade}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase">
+                            Status: {m.status || 'pending'}
+                          </span>
+                        </div>
+
+                        {/* Comparative Pair Snippets */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="p-2.5 rounded-xl bg-white border border-rose-100 space-y-1">
+                            <span className="text-[9px] font-extrabold uppercase text-rose-500 block">
+                              Lost Item
+                            </span>
+                            <p className="font-bold text-slate-900 line-clamp-1">{m.lostItem?.title}</p>
+                            <p className="text-[10px] text-slate-500">📍 {m.lostItem?.location}</p>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-white border border-emerald-100 space-y-1">
+                            <span className="text-[9px] font-extrabold uppercase text-emerald-600 block">
+                              Found Item
+                            </span>
+                            <p className="font-bold text-slate-900 line-clamp-1">{m.foundItem?.title}</p>
+                            <p className="text-[10px] text-slate-500">📍 {m.foundItem?.location}</p>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                          {m.summaryExplanation}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(m.createdAt).toLocaleDateString()}
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={async () => {
+                              const lostUserId = m.lostItem.user?._id || m.lostItem.user;
+                              const foundUserId = m.foundItem.user?._id || m.foundItem.user;
+                              const otherId = lostUserId.toString() === user._id.toString() ? foundUserId : lostUserId;
+                              try {
+                                const { data } = await API.post('/chat/conversations', {
+                                  recipientId: otherId,
+                                  itemId: m.lostItem._id,
+                                  matchingItemId: m.foundItem._id,
+                                });
+                                navigate(`/chat/${data._id}`);
+                              } catch (e) {
+                                toast.error('Failed to open chat');
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl flex items-center space-x-1 transition-all"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Chat</span>
+                          </button>
+
+                          <Link
+                            to={`/matches/${m._id}`}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1 shadow-sm transition-all"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Compare Match</span>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

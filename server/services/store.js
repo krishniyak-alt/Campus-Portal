@@ -145,6 +145,77 @@ class MemoryStore {
     };
 
     this.claims.push(claim1);
+
+    // Initial AI Match Seed (AirPods vs Wireless Case or similar)
+    const match1 = {
+      _id: 'mtc_001',
+      lostItem: item3,
+      foundItem: item4,
+      overallScore: 78,
+      matchGrade: 'Possible Match',
+      summaryExplanation: 'Possible match identified (78%). Overlapping category semantics, campus proximity, and compatible date range.',
+      factors: {
+        category: { score: 70, weight: 20, matched: true, detail: 'Related electronics and bag accessory' },
+        nameDescription: { score: 75, weight: 20, matched: true, detail: 'Similar electronic items reported near Student Union/Auditorium' },
+        brandModel: { score: 80, weight: 15, matched: true, detail: 'Compatible accessories and notebooks' },
+        color: { score: 70, weight: 10, matched: true, detail: 'Neutral color tones' },
+        location: { score: 85, weight: 10, matched: true, detail: 'Nearby academic cluster zone' },
+        dateTime: { score: 85, weight: 10, matched: true, detail: 'Reported within 24 hours of each other' },
+        imageSimilarity: { score: 80, weight: 15, matched: true, detail: 'Photos available on both records' },
+      },
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.matches = [match1];
+
+    const notif1 = {
+      _id: 'ntf_001',
+      recipient: student2,
+      sender: student1,
+      type: 'ai_match',
+      title: '🔔 Possible Lost & Found Match',
+      message: 'Your lost item (Apple AirPods Pro Case) may have been found (78% match score).',
+      item: item3,
+      matchingItem: item4,
+      matchId: match1,
+      matchScore: 78,
+      matchGrade: 'Possible Match',
+      isRead: false,
+      actionStatus: 'pending',
+      createdAt: new Date(),
+    };
+
+    this.notifications = [notif1];
+
+    const conv1 = {
+      _id: 'cnv_001',
+      participants: [student1, student2],
+      item: item2,
+      matchingItem: null,
+      lastMessageText: 'Hey Alex, is this your Hydro Flask? You can collect it from Science Block B!',
+      lastMessageAt: new Date(),
+      unreadCount: { [student1._id]: 1 },
+      blockedUsers: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const msg1 = {
+      _id: 'msg_001',
+      conversation: conv1._id,
+      sender: student2,
+      recipient: student1,
+      content: 'Hey Alex, is this your Hydro Flask? You can collect it from Science Block B!',
+      status: 'sent',
+      createdAt: new Date(),
+    };
+
+    conv1.lastMessage = msg1;
+    this.conversations = [conv1];
+    this.messages = [msg1];
+
     this.initialized = true;
     console.log('⚡ Fallback Memory Data Store Initialized');
   }

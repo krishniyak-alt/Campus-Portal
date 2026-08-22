@@ -8,6 +8,10 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const User = require('./models/User');
 const Item = require('./models/Item');
 const Claim = require('./models/Claim');
+const AIMatch = require('./models/AIMatch');
+const Notification = require('./models/Notification');
+const Conversation = require('./models/Conversation');
+const Message = require('./models/Message');
 
 const seedData = async () => {
   try {
@@ -19,6 +23,10 @@ const seedData = async () => {
     await User.deleteMany();
     await Item.deleteMany();
     await Claim.deleteMany();
+    await AIMatch.deleteMany();
+    await Notification.deleteMany();
+    await Conversation.deleteMany();
+    await Message.deleteMany();
 
     console.log('Cleared existing database records.');
 
@@ -159,12 +167,67 @@ const seedData = async () => {
       status: 'pending',
     });
 
-    console.log('Sample Claims created.');
+    // Sample AI Match
+    const match1 = await AIMatch.create({
+      lostItem: item3._id,
+      foundItem: item4._id,
+      overallScore: 78,
+      matchGrade: 'Possible Match',
+      summaryExplanation: 'Possible match identified (78%). Compatible accessory descriptions and nearby student transit zone.',
+      factors: {
+        category: { score: 70, weight: 20, matched: true, detail: 'Related electronics and bag contents' },
+        nameDescription: { score: 75, weight: 20, matched: true, detail: 'Overlapping campus transit reports' },
+        brandModel: { score: 80, weight: 15, matched: true, detail: 'Compatible accessories and notebooks' },
+        color: { score: 70, weight: 10, matched: true, detail: 'Neutral tones' },
+        location: { score: 85, weight: 10, matched: true, detail: 'Nearby academic cluster zone' },
+        dateTime: { score: 85, weight: 10, matched: true, detail: 'Reported within 24 hours of each other' },
+        imageSimilarity: { score: 80, weight: 15, matched: true, detail: 'Photos attached' },
+      },
+      status: 'pending',
+    });
+
+    // Sample Notification
+    await Notification.create({
+      recipient: student2._id,
+      sender: student1._id,
+      type: 'ai_match',
+      title: '🔔 Possible Match: Apple AirPods Pro Case',
+      message: 'Your lost item (Apple AirPods Pro Case) may match a found item (78% match score).',
+      item: item3._id,
+      matchingItem: item4._id,
+      matchId: match1._id,
+      matchScore: 78,
+      matchGrade: 'Possible Match',
+      isRead: false,
+    });
+
+    // Sample Conversation & Message
+    const conv1 = await Conversation.create({
+      participants: [student1._id, student2._id],
+      item: item2._id,
+      lastMessageText: 'Hey Alex, is this your Hydro Flask? You can collect it from Science Block B!',
+      lastMessageAt: new Date(),
+      unreadCount: new Map([[student1._id.toString(), 1]]),
+      blockedUsers: [],
+    });
+
+    const msg1 = await Message.create({
+      conversation: conv1._id,
+      sender: student2._id,
+      recipient: student1._id,
+      content: 'Hey Alex, is this your Hydro Flask? You can collect it from Science Block B!',
+      status: 'sent',
+    });
+
+    conv1.lastMessage = msg1._id;
+    await conv1.save();
+
+    console.log('Sample Claims, AI Matches & Conversations created.');
     console.log('\n--- SEED COMPLETE ---');
     console.log('Demo Credentials:');
-    console.log('Admin: admin@campus.edu / Admin@123');
-    console.log('Student 1: alex.johnson@student.campus.edu / Student@123');
-    console.log('Student 2: sarah.smith@student.campus.edu / Student@123');
+    console.log('Admin: admin@ksrce.ac.in / Admin@123');
+    console.log('Student 1: alex.johnson@ksrce.ac.in / Student@123');
+    console.log('Student 2: sarah.smith@ksrce.ac.in / Student@123');
 
     process.exit(0);
   } catch (error) {

@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Item = require('./models/Item');
 const Claim = require('./models/Claim');
+const AIMatch = require('./models/AIMatch');
+const Notification = require('./models/Notification');
+const Conversation = require('./models/Conversation');
+const Message = require('./models/Message');
 
 const seedDataInline = async () => {
   try {
@@ -53,6 +57,8 @@ const seedDataInline = async () => {
       type: 'lost',
       category: 'ID Card',
       description: 'Blue campus lanyard with student ID card for Alex Johnson. Lost near the Central Library 2nd floor reading area.',
+      color: 'Blue',
+      model: 'Campus Lanyard',
       location: 'Central Library, 2nd Floor',
       date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       time: '14:30',
@@ -67,6 +73,8 @@ const seedDataInline = async () => {
       type: 'found',
       category: 'Water Bottle',
       description: 'Stainless steel blue 32oz Hydro Flask with several stickers (GitHub, React, NASA). Left on the bench outside Science Block B.',
+      color: 'Blue',
+      model: 'Hydro Flask',
       location: 'Science Block B Benches',
       currentLocation: 'Main Security Desk Desk A',
       date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -82,6 +90,8 @@ const seedDataInline = async () => {
       type: 'lost',
       category: 'Electronics',
       description: 'White wireless charging case with a translucent protective silicone sleeve. Might have fallen out in Student Union Cafeteria.',
+      color: 'White',
+      model: 'AirPods Pro',
       location: 'Student Union Cafeteria',
       date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       time: '17:45',
@@ -91,11 +101,13 @@ const seedDataInline = async () => {
       user: student2._id,
     });
 
-    await Item.create({
+    const item4 = await Item.create({
       title: 'Black Jansport Backpack',
       type: 'found',
       category: 'Bag',
       description: 'Black backpack containing two spiral notebooks, an engineering calculator, and a blue pencil pouch.',
+      color: 'Black',
+      model: 'Jansport',
       location: 'Engineering Auditorium Room 101',
       currentLocation: 'Department Office Room 104',
       date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
@@ -114,6 +126,61 @@ const seedDataInline = async () => {
       identifyingDetails: 'The sticker on the bottom left says "Eat Sleep Code Repeat" and there is a small dent on the stainless steel bottom.',
       status: 'pending',
     });
+
+    // Sample AI Match
+    const match1 = await AIMatch.create({
+      lostItem: item3._id,
+      foundItem: item4._id,
+      overallScore: 78,
+      matchGrade: 'Possible Match',
+      summaryExplanation: 'Possible match identified (78%). Compatible accessory descriptions and nearby student transit zone.',
+      factors: {
+        category: { score: 70, weight: 20, matched: true, detail: 'Related electronics and bag contents' },
+        nameDescription: { score: 75, weight: 20, matched: true, detail: 'Overlapping campus transit reports' },
+        brandModel: { score: 80, weight: 15, matched: true, detail: 'Compatible accessories and notebooks' },
+        color: { score: 70, weight: 10, matched: true, detail: 'Neutral tones' },
+        location: { score: 85, weight: 10, matched: true, detail: 'Nearby academic cluster zone' },
+        dateTime: { score: 85, weight: 10, matched: true, detail: 'Reported within 24 hours of each other' },
+        imageSimilarity: { score: 80, weight: 15, matched: true, detail: 'Photos attached' },
+      },
+      status: 'pending',
+    });
+
+    // Sample Notification
+    await Notification.create({
+      recipient: student2._id,
+      sender: student1._id,
+      type: 'ai_match',
+      title: '🔔 Possible Match: Apple AirPods Pro Case',
+      message: 'Your lost item (Apple AirPods Pro Case) may match a found item (78% match score).',
+      item: item3._id,
+      matchingItem: item4._id,
+      matchId: match1._id,
+      matchScore: 78,
+      matchGrade: 'Possible Match',
+      isRead: false,
+    });
+
+    // Sample Conversation & Message
+    const conv1 = await Conversation.create({
+      participants: [student1._id, student2._id],
+      item: item2._id,
+      lastMessageText: 'Hey Alex, is this your Hydro Flask? You can collect it from Science Block B!',
+      lastMessageAt: new Date(),
+      unreadCount: new Map([[student1._id.toString(), 1]]),
+      blockedUsers: [],
+    });
+
+    const msg1 = await Message.create({
+      conversation: conv1._id,
+      sender: student2._id,
+      recipient: student1._id,
+      content: 'Hey Alex, is this your Hydro Flask? You can collect it from Science Block B!',
+      status: 'sent',
+    });
+
+    conv1.lastMessage = msg1._id;
+    await conv1.save();
 
     console.log('Database seeded successfully with initial records.');
   } catch (err) {
