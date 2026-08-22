@@ -154,40 +154,6 @@ The system aims to reduce the chances of permanently losing valuable belongings 
 
 ---
 
-## Installation and Setup
-
-### 1. Clone the Repository
-
-bash
-git clone YOUR_REPOSITORY_URL
-
-
-### 2. Move into the Project Folder
-
-bash
-cd campus-lost-found
-
-
-### 3. Install Frontend Dependencies
-
-bash
-cd client
-npm install
-npm run dev
-
-
-### 4. Install Backend Dependencies
-
-Open another terminal:
-
-bash
-cd server
-npm install
-npm run dev
-
-
----
-
 ##  Future Enhancements
 
 *  AI-based lost and found item matching
