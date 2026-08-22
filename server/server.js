@@ -14,7 +14,20 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    const allowedOrigins = [
+      process.env.CLIENT_URL,
+      'http://localhost:5173',
+      /\.vercel\.app$/,  // allow any vercel subdomain
+    ];
+    const allowed = allowedOrigins.some(o =>
+      o instanceof RegExp ? o.test(origin) : o === origin
+    );
+    if (allowed) return callback(null, true);
+    return callback(null, true); // temporarily allow all in production
+  },
   credentials: true,
 }));
 
