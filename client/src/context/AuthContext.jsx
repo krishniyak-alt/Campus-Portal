@@ -11,13 +11,28 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('userInfo');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        if (parsed && parsed.token) {
+          setUser(parsed);
+        } else {
+          localStorage.removeItem('userInfo');
+          setUser(null);
+        }
       } catch (err) {
         console.error('Failed to parse user info', err);
         localStorage.removeItem('userInfo');
+        setUser(null);
       }
     }
     setLoading(false);
+
+    const handleAuthError = () => {
+      setUser(null);
+      localStorage.removeItem('userInfo');
+    };
+
+    window.addEventListener('auth:unauthorized', handleAuthError);
+    return () => window.removeEventListener('auth:unauthorized', handleAuthError);
   }, []);
 
   const login = async (email, phone, password) => {

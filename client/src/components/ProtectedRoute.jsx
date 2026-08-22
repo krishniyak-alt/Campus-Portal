@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children }) => {
     return <Loading fullScreen />;
   }
 
-  if (!user) {
+  if (!user || !user.token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

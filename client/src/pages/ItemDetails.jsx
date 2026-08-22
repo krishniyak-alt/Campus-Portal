@@ -21,6 +21,11 @@ import {
   MessageSquare,
   FileCheck,
   Edit,
+  Lock,
+  Unlock,
+  HelpCircle,
+  ShieldAlert,
+  EyeOff,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -35,6 +40,12 @@ const ItemDetails = () => {
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Security Verification Lock State
+  const [unlocked, setUnlocked] = useState(false);
+  const [inputColor, setInputColor] = useState('');
+  const [inputModel, setInputModel] = useState('');
+  const [verifyError, setVerifyError] = useState('');
 
   const fetchItemDetails = async () => {
     try {
@@ -91,12 +102,63 @@ const ItemDetails = () => {
   const isLost = item.type === 'lost';
   const isResolved = item.status === 'resolved' || item.status === 'claimed';
 
+  const canViewFull = isOwner || isAdmin || unlocked;
+
   const formattedDate = new Date(item.date).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   });
+
+  const handleVerify = (e) => {
+    e.preventDefault();
+    setVerifyError('');
+
+    if (!inputColor.trim() && !inputModel.trim()) {
+      setVerifyError('Please enter the color or model/brand of the item.');
+      return;
+    }
+
+    const colorTarget = (item.color || '').toLowerCase().trim();
+    const modelTarget = (item.model || '').toLowerCase().trim();
+    const titleTarget = (item.title || '').toLowerCase();
+    const descTarget = (item.description || '').toLowerCase();
+
+    const colInput = inputColor.toLowerCase().trim();
+    const modInput = inputModel.toLowerCase().trim();
+
+    let colorMatched = false;
+    let modelMatched = false;
+
+    if (colInput) {
+      if (colorTarget) {
+        colorMatched = colorTarget.includes(colInput) || colInput.includes(colorTarget);
+      } else {
+        colorMatched = descTarget.includes(colInput) || titleTarget.includes(colInput);
+      }
+    } else {
+      colorMatched = true;
+    }
+
+    if (modInput) {
+      if (modelTarget) {
+        modelMatched = modelTarget.includes(modInput) || modInput.includes(modelTarget);
+      } else {
+        modelMatched = descTarget.includes(modInput) || titleTarget.includes(modInput);
+      }
+    } else {
+      modelMatched = true;
+    }
+
+    if (colorMatched && modelMatched) {
+      setUnlocked(true);
+      toast.success('Security details verified! Full item details unlocked.');
+    } else {
+      setVerifyError('Verification failed. The color or model details entered do not match.');
+      toast.error('Verification failed');
+    }
+  };
 
   const handleStatusChange = async (newStatus) => {
     setUpdatingStatus(true);
@@ -152,7 +214,9 @@ const ItemDetails = () => {
             <img
               src={item.image}
               alt={item.title}
-              className="w-full h-full object-cover max-h-[500px]"
+              className={`w-full h-full object-cover max-h-[500px] transition-all duration-500 ${
+                !canViewFull ? 'blur-md opacity-40 scale-105' : ''
+              }`}
             />
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-slate-400 space-y-2">
@@ -161,8 +225,20 @@ const ItemDetails = () => {
             </div>
           )}
 
+          {!canViewFull && item.image && (
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center space-y-3 z-10">
+              <div className="p-4 bg-white/10 rounded-full border border-white/20">
+                <EyeOff className="w-8 h-8 text-amber-400" />
+              </div>
+              <h4 className="font-extrabold text-base">Photo Masked for Security</h4>
+              <p className="text-xs text-slate-200 max-w-xs leading-relaxed">
+                To prevent fraudulent claims, full item photo is hidden. Answer the security questions to unlock details.
+              </p>
+            </div>
+          )}
+
           {/* Badges Overlay */}
-          <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+          <div className="absolute top-4 left-4 flex flex-wrap gap-2 z-20">
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-md backdrop-blur-md ${
                 isLost ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
@@ -192,9 +268,78 @@ const ItemDetails = () => {
               </h1>
             </div>
 
-            <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
-              {item.description}
-            </p>
+            {canViewFull ? (
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Full Details Unlocked & Verified</span>
+                </div>
+                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
+                  {item.description}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-amber-50/90 border border-amber-200/80 p-4 rounded-2xl space-y-1.5 text-xs text-amber-900">
+                  <div className="flex items-center space-x-2 font-bold">
+                    <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Security Verification Required</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-800">
+                    Detailed description, full photo, and claim options are protected so unauthorized persons cannot misuse details.
+                  </p>
+                </div>
+
+                {/* Verification Challenge Card */}
+                <form onSubmit={handleVerify} className="bg-slate-50 border border-slate-200/90 p-5 rounded-2xl space-y-3">
+                  <div className="flex items-center space-x-2 text-slate-800 font-bold text-xs pb-1 border-b border-slate-200">
+                    <HelpCircle className="w-4 h-4 text-indigo-600" />
+                    <span>Verify Item Details to Unlock</span>
+                  </div>
+
+                  {verifyError && (
+                    <div className="p-2.5 bg-rose-50 text-rose-700 text-xs rounded-xl border border-rose-200 flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{verifyError}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">
+                      1. Item Color *
+                    </label>
+                    <input
+                      type="text"
+                      value={inputColor}
+                      onChange={(e) => setInputColor(e.target.value)}
+                      placeholder="e.g. Green, Blue, Black..."
+                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">
+                      2. Brand / Model or Unique Tag *
+                    </label>
+                    <input
+                      type="text"
+                      value={inputModel}
+                      onChange={(e) => setInputModel(e.target.value)}
+                      placeholder="e.g. Green tag, Hydro Flask, AirPods..."
+                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 flex items-center justify-center space-x-1.5 transition-all mt-1"
+                  >
+                    <Unlock className="w-4 h-4 text-amber-300" />
+                    <span>Verify &amp; Unlock Full Details</span>
+                  </button>
+                </form>
+              </div>
+            )}
 
             {/* Metadata Grid */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3 text-xs text-slate-700">
@@ -202,11 +347,11 @@ const ItemDetails = () => {
                 <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
                 <div>
                   <span className="font-semibold text-slate-900">Location: </span>
-                  <span>{item.location}</span>
+                  <span>{canViewFull ? item.location : 'Campus Grounds (Verify to view specific location)'}</span>
                 </div>
               </div>
 
-              {item.currentLocation && (
+              {item.currentLocation && canViewFull && (
                 <div className="flex items-center space-x-3">
                   <Building className="w-4 h-4 text-emerald-500 shrink-0" />
                   <div>
@@ -247,20 +392,27 @@ const ItemDetails = () => {
           {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-100 space-y-3">
             {!isOwner && !isResolved && (
-              <button
-                onClick={() => {
-                  if (!user) {
-                    toast.error('Please login to claim this item');
-                    navigate('/login');
-                    return;
-                  }
-                  setClaimModalOpen(true);
-                }}
-                className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2 transition-all hover:scale-[1.01]"
-              >
-                <ShieldCheck className="w-5 h-5 text-emerald-300" />
-                <span>Claim This Item</span>
-              </button>
+              canViewFull ? (
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      toast.error('Please login to claim this item');
+                      navigate('/login');
+                      return;
+                    }
+                    setClaimModalOpen(true);
+                  }}
+                  className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2 transition-all hover:scale-[1.01]"
+                >
+                  <ShieldCheck className="w-5 h-5 text-emerald-300" />
+                  <span>Claim This Item</span>
+                </button>
+              ) : (
+                <div className="p-3 bg-slate-100 rounded-xl text-center text-xs text-slate-500 font-semibold flex items-center justify-center space-x-2 border border-slate-200">
+                  <Lock className="w-4 h-4 text-slate-400" />
+                  <span>Complete Security Verification Above to Claim Item</span>
+                </div>
+              )
             )}
 
             {(isOwner || isAdmin) && (
