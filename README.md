@@ -49,7 +49,7 @@ This platform provides a centralized and easy-to-use solution where students can
 * MongoDB
 * Mongoose
 * JWT Authentication
-* bcrypt
+* bcryptjs
 
 ---
 
