@@ -26,6 +26,7 @@ import {
   HelpCircle,
   ShieldAlert,
   EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -36,10 +37,12 @@ const ItemDetails = () => {
 
   const [item, setItem] = useState(null);
   const [claims, setClaims] = useState([]);
+  const [itemMatches, setItemMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   // Security Verification Lock State
   const [unlocked, setUnlocked] = useState(false);
@@ -51,6 +54,14 @@ const ItemDetails = () => {
     try {
       const { data } = await API.get(`/items/${id}`);
       setItem(data);
+
+      // Fetch AI Matches for this item
+      try {
+        const matchRes = await API.get(`/matches/item/${id}`);
+        setItemMatches(matchRes.data || []);
+      } catch (e) {
+        console.warn('Could not load AI matches:', e.message);
+      }
 
       if (
         user &&
@@ -157,6 +168,26 @@ const ItemDetails = () => {
     } else {
       setVerifyError('Verification failed. The color or model details entered do not match.');
       toast.error('Verification failed');
+    }
+  };
+
+  const handleDirectChat = async () => {
+    if (!user) {
+      toast.error('Please login to chat with the reporter');
+      navigate('/login');
+      return;
+    }
+    setStartingChat(true);
+    try {
+      const { data } = await API.post('/chat/conversations', {
+        recipientId: item.user._id,
+        itemId: item._id,
+      });
+      navigate(`/chat/${data._id}`);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to open chat');
+    } finally {
+      setStartingChat(false);
     }
   };
 
@@ -272,7 +303,7 @@ const ItemDetails = () => {
               <div className="space-y-3">
                 <div className="flex items-center space-x-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Full Details Unlocked & Verified</span>
+                  <span>Full Details Unlocked &amp; Verified</span>
                 </div>
                 <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
                   {item.description}
@@ -392,27 +423,38 @@ const ItemDetails = () => {
           {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-100 space-y-3">
             {!isOwner && !isResolved && (
-              canViewFull ? (
+              <div className="flex flex-col sm:flex-row gap-2">
+                {canViewFull ? (
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        toast.error('Please login to claim this item');
+                        navigate('/login');
+                        return;
+                      }
+                      setClaimModalOpen(true);
+                    }}
+                    className="flex-1 py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2 transition-all hover:scale-[1.01]"
+                  >
+                    <ShieldCheck className="w-5 h-5 text-emerald-300" />
+                    <span>Claim This Item</span>
+                  </button>
+                ) : (
+                  <div className="flex-1 p-3 bg-slate-100 rounded-xl text-center text-xs text-slate-500 font-semibold flex items-center justify-center space-x-2 border border-slate-200">
+                    <Lock className="w-4 h-4 text-slate-400" />
+                    <span>Verify Above to Claim</span>
+                  </div>
+                )}
+
                 <button
-                  onClick={() => {
-                    if (!user) {
-                      toast.error('Please login to claim this item');
-                      navigate('/login');
-                      return;
-                    }
-                    setClaimModalOpen(true);
-                  }}
-                  className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2 transition-all hover:scale-[1.01]"
+                  onClick={handleDirectChat}
+                  disabled={startingChat}
+                  className="py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md flex items-center justify-center space-x-2 transition-all"
                 >
-                  <ShieldCheck className="w-5 h-5 text-emerald-300" />
-                  <span>Claim This Item</span>
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Chat with Reporter</span>
                 </button>
-              ) : (
-                <div className="p-3 bg-slate-100 rounded-xl text-center text-xs text-slate-500 font-semibold flex items-center justify-center space-x-2 border border-slate-200">
-                  <Lock className="w-4 h-4 text-slate-400" />
-                  <span>Complete Security Verification Above to Claim Item</span>
-                </div>
-              )
+              </div>
             )}
 
             {(isOwner || isAdmin) && (
@@ -455,6 +497,106 @@ const ItemDetails = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* AI MATCH SUGGESTIONS SECTION */}
+      <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-5 border border-indigo-500/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md text-amber-300">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-extrabold">AI Matching Insights</h2>
+              <p className="text-xs text-indigo-200">
+                Automated similarity detection against all active {item.type === 'lost' ? 'Found' : 'Lost'} items in campus database.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {itemMatches.length === 0 ? (
+          <div className="bg-white/5 rounded-2xl p-5 border border-white/10 text-center space-y-1">
+            <p className="text-xs text-indigo-100 font-semibold">No potential matches detected yet</p>
+            <p className="text-[11px] text-indigo-300">
+              Our AI evaluates new reports as soon as they are submitted and notifies both parties if a match is found.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {itemMatches.map((m) => {
+              const matchedItem = m.lostItem?._id === item._id ? m.foundItem : m.lostItem;
+              if (!matchedItem) return null;
+              const isHigh = m.overallScore >= 80;
+
+              return (
+                <div
+                  key={m._id}
+                  className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 space-y-3 hover:bg-white/15 transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            isHigh ? 'bg-emerald-400 text-slate-900' : 'bg-amber-400 text-slate-900'
+                          }`}
+                        >
+                          {m.overallScore}% {m.matchGrade}
+                        </span>
+                        <h4 className="font-extrabold text-sm text-white mt-1.5 line-clamp-1">
+                          {matchedItem.title}
+                        </h4>
+                      </div>
+                      {matchedItem.image && (
+                        <img
+                          src={matchedItem.image}
+                          alt={matchedItem.title}
+                          className="w-12 h-12 object-cover rounded-xl border border-white/20 shrink-0"
+                        />
+                      )}
+                    </div>
+
+                    <p className="text-xs text-indigo-100/80 line-clamp-2 leading-relaxed">
+                      {m.summaryExplanation || matchedItem.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[10px] text-indigo-200 truncate">
+                      📍 {matchedItem.location}
+                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {!isOwner && !isResolved && (
+                        <button
+                          onClick={() => {
+                            if (!user) {
+                              toast.error('Please login to claim this item');
+                              navigate('/login');
+                              return;
+                            }
+                            setClaimModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-900 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center space-x-1 shadow-sm"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Claim Item</span>
+                        </button>
+                      )}
+                      <Link
+                        to={`/matches/${m._id}`}
+                        className="px-3 py-1.5 bg-white text-indigo-900 hover:bg-indigo-50 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center space-x-1 shadow-sm"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Compare Match</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* CLAIMS OVERVIEW SECTION (Visible to Owner & Admin) */}

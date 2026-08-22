@@ -38,6 +38,9 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/items', require('./routes/itemRoutes'));
 app.use('/api/claims', require('./routes/claimRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/matches', require('./routes/matchRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 
 // Error handling middlewares
 app.use(notFound);

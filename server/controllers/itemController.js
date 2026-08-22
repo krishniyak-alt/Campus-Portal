@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Item = require('../models/Item');
 const memoryStore = require('../services/store');
 const { handleImageUpload } = require('../middleware/uploadMiddleware');
+const { analyzeItemMatches } = require('./matchController');
 
 const isDbConnected = () => mongoose.connection.readyState === 1;
 
@@ -155,6 +156,11 @@ const createItem = async (req, res) => {
         'name email department studentId'
       );
 
+      // Trigger AI similarity matching asynchronously
+      analyzeItemMatches(populatedItem).catch((err) =>
+        console.error('[AI Auto Match Error]:', err.message)
+      );
+
       return res.status(201).json(populatedItem);
     } else {
       await memoryStore.init();
@@ -185,6 +191,12 @@ const createItem = async (req, res) => {
       };
 
       memoryStore.items.unshift(newItem);
+
+      // Trigger AI matching in memory store asynchronously
+      analyzeItemMatches(newItem).catch((err) =>
+        console.error('[AI Auto Match Error]:', err.message)
+      );
+
       return res.status(201).json(newItem);
     }
   } catch (error) {
@@ -233,11 +245,6 @@ const updateItem = async (req, res) => {
       if (time !== undefined) item.time = time;
       if (contactPreference) item.contactPreference = contactPreference;
       if (status) item.status = status;
-      if (currentLocation !== undefined) item.currentLocation = currentLocation;
-      if (date) item.date = date;
-      if (time !== undefined) item.time = time;
-      if (contactPreference) item.contactPreference = contactPreference;
-      if (status) item.status = status;
 
       if (req.file) {
         item.image = await handleImageUpload(req.file, req);
@@ -248,6 +255,13 @@ const updateItem = async (req, res) => {
         'user',
         'name email department studentId'
       );
+
+      // Re-trigger AI matching on update if item is active
+      if (populatedItem.status === 'active') {
+        analyzeItemMatches(populatedItem).catch((err) =>
+          console.error('[AI Auto Match Error]:', err.message)
+        );
+      }
 
       return res.json(populatedItem);
     } else {
@@ -261,6 +275,13 @@ const updateItem = async (req, res) => {
 
       Object.assign(item, req.body);
       item.updatedAt = new Date();
+
+      if (item.status === 'active') {
+        analyzeItemMatches(item).catch((err) =>
+          console.error('[AI Auto Match Error]:', err.message)
+        );
+      }
+
       return res.json(item);
     }
   } catch (error) {

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Claim = require('../models/Claim');
 const Item = require('../models/Item');
+const Notification = require('../models/Notification');
 const memoryStore = require('../services/store');
 const { handleImageUpload } = require('../middleware/uploadMiddleware');
 
@@ -19,10 +20,10 @@ const createClaim = async (req, res) => {
     }
 
     if (isDbConnected()) {
-      const item = await Item.findById(itemId);
+      const item = await Item.findById(itemId).populate('user', 'name department');
       if (!item) return res.status(404).json({ message: 'Target item not found' });
 
-      if (item.user.toString() === req.user._id.toString()) {
+      if (item.user._id.toString() === req.user._id.toString()) {
         return res.status(400).json({ message: 'You cannot claim an item posted by yourself' });
       }
 
@@ -48,6 +49,21 @@ const createClaim = async (req, res) => {
       const populated = await Claim.findById(savedClaim._id)
         .populate('item')
         .populate('claimant', 'name email studentId department');
+
+      // 🔔 Notify the item owner about the new claim
+      try {
+        await Notification.create({
+          recipient: item.user._id,
+          sender: req.user._id,
+          type: 'claim_submitted',
+          title: `📋 New Claim on "${item.title}"`,
+          message: `${req.user.name} (${req.user.department}) has submitted a claim request for your ${item.type} item "${item.title}". Please review it in your dashboard.`,
+          item: item._id,
+          isRead: false,
+        });
+      } catch (notifErr) {
+        console.warn('Notification creation failed (non-blocking):', notifErr.message);
+      }
 
       return res.status(201).json(populated);
     } else {
@@ -77,6 +93,25 @@ const createClaim = async (req, res) => {
       };
 
       memoryStore.claims.unshift(newClaim);
+
+      // 🔔 Notify item owner (memory store fallback)
+      try {
+        const ownerId = (item.user._id || item.user).toString();
+        memoryStore.notifications.unshift({
+          _id: 'notif_claim_' + Date.now(),
+          recipient: { _id: ownerId },
+          sender: { _id: req.user._id, name: req.user.name },
+          type: 'claim_submitted',
+          title: `📋 New Claim on "${item.title}"`,
+          message: `${req.user.name} has submitted a claim request for your ${item.type} item "${item.title}".`,
+          item: { _id: item._id, title: item.title },
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } catch (notifErr) {
+        console.warn('Memory notification failed:', notifErr.message);
+      }
+
       return res.status(201).json(newClaim);
     }
   } catch (error) {
@@ -147,7 +182,9 @@ const updateClaimStatus = async (req, res) => {
   try {
     const { status } = req.body;
     if (isDbConnected()) {
-      const claim = await Claim.findById(req.params.id).populate('item');
+      const claim = await Claim.findById(req.params.id)
+        .populate('item')
+        .populate('claimant', 'name email department');
       if (!claim) return res.status(404).json({ message: 'Claim not found' });
 
       claim.status = status;
@@ -156,6 +193,26 @@ const updateClaimStatus = async (req, res) => {
       if (status === 'approved') {
         claim.item.status = 'claimed';
         await claim.item.save();
+      }
+
+      // 🔔 Notify the claimant about approval or rejection
+      try {
+        const isApproved = status === 'approved';
+        await Notification.create({
+          recipient: claim.claimant._id,
+          sender: req.user._id,
+          type: isApproved ? 'claim_approved' : 'claim_rejected',
+          title: isApproved
+            ? `✅ Claim Approved: "${claim.item.title}"`
+            : `❌ Claim Rejected: "${claim.item.title}"`,
+          message: isApproved
+            ? `Your ownership claim for "${claim.item.title}" has been approved! Please coordinate the collection with the reporter.`
+            : `Your ownership claim for "${claim.item.title}" was not approved at this time. You may reach out via chat for more information.`,
+          item: claim.item._id,
+          isRead: false,
+        });
+      } catch (notifErr) {
+        console.warn('Claim status notification failed (non-blocking):', notifErr.message);
       }
 
       return res.json(claim);
@@ -168,6 +225,28 @@ const updateClaimStatus = async (req, res) => {
       if (status === 'approved' && claim.item) {
         claim.item.status = 'claimed';
       }
+
+      // 🔔 Notify claimant in memory store
+      try {
+        const claimantId = (claim.claimant._id || claim.claimant).toString();
+        const isApproved = status === 'approved';
+        memoryStore.notifications.unshift({
+          _id: 'notif_claimstatus_' + Date.now(),
+          recipient: { _id: claimantId },
+          sender: { _id: req.user._id, name: req.user.name },
+          type: isApproved ? 'claim_approved' : 'claim_rejected',
+          title: isApproved ? `✅ Claim Approved` : `❌ Claim Rejected`,
+          message: isApproved
+            ? `Your claim has been approved! Coordinate the collection.`
+            : `Your claim was not approved at this time.`,
+          item: claim.item ? { _id: claim.item._id, title: claim.item.title } : null,
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } catch (notifErr) {
+        console.warn('Memory claim status notification failed:', notifErr.message);
+      }
+
       return res.json(claim);
     }
   } catch (error) {
