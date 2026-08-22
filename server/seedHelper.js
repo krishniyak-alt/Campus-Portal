@@ -17,9 +17,10 @@ const seedDataInline = async () => {
     // Admin User
     await User.create({
       name: 'Campus Admin',
-      email: 'admin@campus.edu',
+      email: 'admin@ksrce.ac.in',
       studentId: 'ADM-001',
       department: 'Student Affairs',
+      phone: '9876543210',
       password: adminPassword,
       role: 'admin',
     });
@@ -27,9 +28,10 @@ const seedDataInline = async () => {
     // Student 1
     const student1 = await User.create({
       name: 'Alex Johnson',
-      email: 'alex.johnson@student.campus.edu',
+      email: 'alex.johnson@ksrce.ac.in',
       studentId: 'CS-2024-042',
       department: 'Computer Science',
+      phone: '9876543211',
       password: studentPassword,
       role: 'student',
     });
@@ -37,9 +39,10 @@ const seedDataInline = async () => {
     // Student 2
     const student2 = await User.create({
       name: 'Sarah Smith',
-      email: 'sarah.smith@student.campus.edu',
+      email: 'sarah.smith@ksrce.ac.in',
       studentId: 'EE-2023-118',
       department: 'Electrical Engineering',
+      phone: '9876543212',
       password: studentPassword,
       role: 'student',
     });

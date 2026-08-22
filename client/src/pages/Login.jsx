@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, Mail, Lock, Loader2, Compass, AlertCircle } from 'lucide-react';
+import { LogIn, Mail, Phone, Lock, Loader2, Compass, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -20,19 +21,26 @@ const Login = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!email || !password) {
-      setErrorMsg('Please enter both email and password');
+    if (!email || !phone || !password) {
+      setErrorMsg('Please enter email, contact number, and password');
+      return;
+    }
+
+    if (!email.toLowerCase().includes('@ksrce')) {
+      const msg = 'Email must be a valid @ksrce email address (e.g. student@ksrce.ac.in)';
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
 
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, phone, password);
       toast.success('Successfully logged in!');
       navigate(from, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
-      const msg = err.response?.data?.message || 'Invalid email or password';
+      const msg = err.response?.data?.message || 'Invalid credentials';
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -58,10 +66,10 @@ const Login = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-              College Email
+              College Email (@ksrce) *
             </label>
             <div className="relative flex items-center">
               <Mail className="absolute left-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
@@ -70,7 +78,7 @@ const Login = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="student@campus.edu"
+                placeholder="student@ksrce.ac.in"
                 className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
             </div>
@@ -78,7 +86,24 @@ const Login = () => {
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-              Password
+              Contact Number *
+            </label>
+            <div className="relative flex items-center">
+              <Phone className="absolute left-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="9876543210"
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+              Password *
             </label>
             <div className="relative flex items-center">
               <Lock className="absolute left-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
@@ -96,7 +121,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+            className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2 transition-all disabled:opacity-50 mt-2"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -117,7 +142,7 @@ const Login = () => {
             </Link>
           </p>
           <p className="text-[11px] text-slate-400">
-            Demo Credentials: <span className="font-mono text-slate-600">alex.johnson@student.campus.edu / Student@123</span>
+            Demo Credentials: <span className="font-mono text-slate-600">alex.johnson@ksrce.ac.in / 9876543211 / Student@123</span>
           </p>
         </div>
       </div>

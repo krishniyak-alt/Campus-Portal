@@ -98,7 +98,7 @@ const Dashboard = () => {
               </span>
             </div>
             <p className="text-indigo-200 text-xs sm:text-sm mt-0.5">
-              {user.email} | Student ID: <span className="font-mono text-white">{user.studentId}</span> | Dept: {user.department}
+              {user.email} | Student ID: <span className="font-mono text-white">{user.studentId}</span> | Dept: {user.department} {user.phone && `| Contact: ${user.phone}`}
             </p>
           </div>
         </div>

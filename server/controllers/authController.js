@@ -19,10 +19,14 @@ const isDbConnected = () => mongoose.connection.readyState === 1;
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, email, studentId, department, password } = req.body;
+    const { name, email, studentId, department, phone, password } = req.body;
 
-    if (!name || !email || !studentId || !department || !password) {
-      return res.status(400).json({ message: 'Please fill in all required fields' });
+    if (!name || !email || !studentId || !department || !phone || !password) {
+      return res.status(400).json({ message: 'Please fill in all required fields including contact number' });
+    }
+
+    if (!email.toLowerCase().includes('@ksrce')) {
+      return res.status(400).json({ message: 'Email must be a valid @ksrce email address (e.g. student@ksrce.ac.in)' });
     }
 
     if (isDbConnected()) {
@@ -39,6 +43,7 @@ const registerUser = async (req, res) => {
         email: email.toLowerCase(),
         studentId,
         department,
+        phone,
         password: hashedPassword,
         role: 'student',
       });
@@ -49,6 +54,7 @@ const registerUser = async (req, res) => {
         email: user.email,
         studentId: user.studentId,
         department: user.department,
+        phone: user.phone,
         role: user.role,
         token: generateToken(user._id),
       });
@@ -69,6 +75,7 @@ const registerUser = async (req, res) => {
         email: email.toLowerCase(),
         studentId,
         department,
+        phone,
         password: hashedPassword,
         role: 'student',
         createdAt: new Date(),
@@ -82,6 +89,7 @@ const registerUser = async (req, res) => {
         email: newUser.email,
         studentId: newUser.studentId,
         department: newUser.department,
+        phone: newUser.phone,
         role: newUser.role,
         token: generateToken(newUser._id),
       });
@@ -97,21 +105,32 @@ const registerUser = async (req, res) => {
 // @access  Public
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
+    if (!email.toLowerCase().includes('@ksrce')) {
+      return res.status(400).json({ message: 'Email must be a valid @ksrce email address (e.g. student@ksrce.ac.in)' });
+    }
+
     if (isDbConnected()) {
       const user = await User.findOne({ email: email.toLowerCase() });
       if (user && (await bcrypt.compare(password, user.password))) {
+        // If phone is provided, optional check or update if missing
+        if (phone && !user.phone) {
+          user.phone = phone;
+          await user.save();
+        }
+
         return res.json({
           _id: user._id,
           name: user.name,
           email: user.email,
           studentId: user.studentId,
           department: user.department,
+          phone: user.phone || phone || '',
           role: user.role,
           token: generateToken(user._id),
         });
@@ -121,12 +140,17 @@ const loginUser = async (req, res) => {
       await memoryStore.init();
       const user = memoryStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
       if (user && (await bcrypt.compare(password, user.password))) {
+        if (phone && !user.phone) {
+          user.phone = phone;
+        }
+
         return res.json({
           _id: user._id,
           name: user.name,
           email: user.email,
           studentId: user.studentId,
           department: user.department,
+          phone: user.phone || phone || '',
           role: user.role,
           token: generateToken(user._id),
         });

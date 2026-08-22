@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, User, Mail, Lock, BadgeCheck, GraduationCap, Loader2, Compass, AlertCircle } from 'lucide-react';
+import { UserPlus, User, Mail, Phone, Lock, BadgeCheck, GraduationCap, Loader2, Compass, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     studentId: '',
     department: '',
     password: '',
@@ -28,6 +29,20 @@ const Register = () => {
     e.preventDefault();
     setErrorMsg('');
 
+    if (!formData.email.toLowerCase().includes('@ksrce')) {
+      const msg = 'Email must be a valid @ksrce email address (e.g. student@ksrce.ac.in)';
+      setErrorMsg(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (!formData.phone) {
+      const msg = 'Please enter your contact number';
+      setErrorMsg(msg);
+      toast.error(msg);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setErrorMsg('Passwords do not match');
       toast.error('Passwords do not match');
@@ -45,6 +60,7 @@ const Register = () => {
       await register({
         name: formData.name,
         email: formData.email,
+        phone: formData.phone,
         studentId: formData.studentId,
         department: formData.department,
         password: formData.password,
@@ -99,21 +115,41 @@ const Register = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-              College Email *
-            </label>
-            <div className="relative flex items-center">
-              <Mail className="absolute left-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
-              <input
-                type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="alex.johnson@student.campus.edu"
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-              />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                College Email (@ksrce) *
+              </label>
+              <div className="relative flex items-center">
+                <Mail className="absolute left-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="alex.johnson@ksrce.ac.in"
+                  className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                Contact Number *
+              </label>
+              <div className="relative flex items-center">
+                <Phone className="absolute left-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="9876543210"
+                  className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
+              </div>
             </div>
           </div>
 

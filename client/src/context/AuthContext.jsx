@@ -20,8 +20,10 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    const { data } = await API.post('/auth/login', { email, password });
+  const login = async (email, phone, password) => {
+    // Handle both login(email, phone, password) and legacy login(email, password)
+    const payload = typeof phone === 'string' && password ? { email, phone, password } : { email, password: phone || password };
+    const { data } = await API.post('/auth/login', payload);
     setUser(data);
     localStorage.setItem('userInfo', JSON.stringify(data));
     return data;
